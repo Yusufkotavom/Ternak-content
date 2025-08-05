@@ -1,0 +1,16 @@
+# Auto Content Generator Cron Jobs
+
+# Generate content every day at 9 AM
+0 9 * * * cd /opt/auto-content-generator && python cli.py --csv daily_keywords.csv --output /var/www/html/content
+
+# Generate content every week on Monday at 8 AM
+0 8 * * 1 cd /opt/auto-content-generator && python cli.py --csv weekly_keywords.csv --wordpress
+
+# Backup generated content every day at 11 PM
+0 23 * * * tar -czf /backup/content-$(date +\%Y\%m\%d).tar.gz /opt/auto-content-generator/output
+
+# Clean old files (older than 30 days)
+0 2 * * * find /opt/auto-content-generator/output -name "*.html" -mtime +30 -delete
+
+# Health check every 5 minutes
+*/5 * * * * curl -f http://localhost:8000/health || echo "Service down at $(date)" >> /var/log/auto-content-generator/health.log

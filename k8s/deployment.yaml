@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auto-content-generator
+  labels:
+    app: auto-content-generator
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: auto-content-generator
+  template:
+    metadata:
+      labels:
+        app: auto-content-generator
+    spec:
+      containers:
+      - name: auto-content-generator
+        image: auto-content-generator:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: auto-content-generator-secrets
+              key: openai-api-key
+        - name: UNSPLASH_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: auto-content-generator-secrets
+              key: unsplash-api-key
+        - name: PIXABAY_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: auto-content-generator-secrets
+              key: pixabay-api-key
+        - name: PEXELS_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: auto-content-generator-secrets
+              key: pexels-api-key
+        - name: WORDPRESS_URL
+          valueFrom:
+            secretKeyRef:
+              name: auto-content-generator-secrets
+              key: wordpress-url
+        - name: WORDPRESS_USER
+          valueFrom:
+            secretKeyRef:
+              name: auto-content-generator-secrets
+              key: wordpress-user
+        - name: WORDPRESS_APP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: auto-content-generator-secrets
+              key: wordpress-app-password
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: output-storage
+          mountPath: /app/output
+      volumes:
+      - name: output-storage
+        persistentVolumeClaim:
+          claimName: auto-content-generator-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auto-content-generator-service
+spec:
+  selector:
+    app: auto-content-generator
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: auto-content-generator-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

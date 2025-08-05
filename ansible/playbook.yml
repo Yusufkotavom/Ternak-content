@@ -1,0 +1,151 @@
+---
+- name: Deploy Auto Content Generator
+  hosts: all
+  become: yes
+  vars:
+    app_dir: /opt/auto-content-generator
+    app_user: www-data
+    app_group: www-data
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+    
+    - name: Install required packages
+      apt:
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+          - git
+          - nginx
+          - supervisor
+          - curl
+        state: present
+      when: ansible_os_family == "Debian"
+    
+    - name: Create application directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+    
+    - name: Clone repository
+      git:
+        repo: "{{ repository_url }}"
+        dest: "{{ app_dir }}"
+        version: main
+      become_user: "{{ app_user }}"
+    
+    - name: Create virtual environment
+      command: python3 -m venv venv
+      args:
+        chdir: "{{ app_dir }}"
+      become_user: "{{ app_user }}"
+    
+    - name: Install Python dependencies
+      pip:
+        requirements: "{{ app_dir }}/requirements.txt"
+        virtualenv: "{{ app_dir }}/venv"
+        virtualenv_command: python3 -m venv
+      become_user: "{{ app_user }}"
+    
+    - name: Copy environment file
+      template:
+        src: ../.env.example
+        dest: "{{ app_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0644'
+    
+    - name: Create log directory
+      file:
+        path: /var/log/auto-content-generator
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+    
+    - name: Copy systemd service file
+      template:
+        src: ../auto-content-generator.service
+        dest: /etc/systemd/system/auto-content-generator.service
+        mode: '0644'
+    
+    - name: Copy nginx configuration
+      template:
+        src: ../nginx.conf
+        dest: /etc/nginx/sites-available/auto-content-generator
+        mode: '0644'
+    
+    - name: Enable nginx site
+      file:
+        src: /etc/nginx/sites-available/auto-content-generator
+        dest: /etc/nginx/sites-enabled/auto-content-generator
+        state: link
+    
+    - name: Copy supervisor configuration
+      template:
+        src: ../supervisor.conf
+        dest: /etc/supervisor/conf.d/auto-content-generator.conf
+        mode: '0644'
+    
+    - name: Create backup directory
+      file:
+        path: /backup
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_group }}"
+        mode: '0755'
+    
+    - name: Add cron jobs
+      cron:
+        name: "{{ item.name }}"
+        job: "{{ item.job }}"
+        state: present
+      loop:
+        - name: "Generate daily content"
+          job: "cd {{ app_dir }} && python cli.py --csv daily_keywords.csv --output /var/www/html/content"
+        - name: "Backup content"
+          job: "tar -czf /backup/content-$(date +%Y%m%d).tar.gz {{ app_dir }}/output"
+        - name: "Health check"
+          job: "curl -f http://localhost:8000/health || echo 'Service down at $(date)' >> /var/log/auto-content-generator/health.log"
+    
+    - name: Start and enable services
+      systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+        daemon_reload: yes
+      loop:
+        - auto-content-generator
+        - nginx
+        - supervisor
+    
+    - name: Restart nginx
+      service:
+        name: nginx
+        state: restarted
+    
+    - name: Restart supervisor
+      service:
+        name: supervisor
+        state: restarted
+    
+    - name: Wait for application to start
+      uri:
+        url: http://localhost:8000/health
+        status_code: 200
+      retries: 10
+      delay: 5
+      register: result
+      until: result.status == 200
+    
+    - name: Display application URL
+      debug:
+        msg: "Auto Content Generator is running at http://{{ ansible_default_ipv4.address }}:8000"

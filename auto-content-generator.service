@@ -1,0 +1,16 @@
+[Unit]
+Description=Auto Content Generator
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/auto-content-generator
+Environment=PATH=/opt/auto-content-generator/venv/bin
+ExecStart=/opt/auto-content-generator/venv/bin/python run.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
