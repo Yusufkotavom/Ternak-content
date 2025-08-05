@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Content Generator - E-E-A-T</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            margin: 20px auto;
+            max-width: 1200px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+        }
+        .content-area {
+            padding: 30px;
+        }
+        .keyword-input {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        .keyword-input:hover {
+            border-color: #764ba2;
+            background: #f0f0f0;
+        }
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+        .result-card {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin: 10px 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .status-success {
+            color: #28a745;
+        }
+        .status-error {
+            color: #dc3545;
+        }
+        .btn-custom {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: white;
+        }
+        .feature-icon {
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f8f9fa;
+        }
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="main-container">
+            <!-- Header -->
+            <div class="header">
+                <h1><i class="fas fa-robot"></i> Auto Content Generator</h1>
+                <p class="mb-0">Sistem otomatisasi content generation dengan E-E-A-T</p>
+            </div>
+
+            <!-- Content Area -->
+            <div class="content-area">
+                <!-- Input Methods -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-upload"></i> Upload CSV File</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="upload-area" id="uploadArea">
+                                    <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                    <h5>Drag & Drop CSV file atau klik untuk browse</h5>
+                                    <p class="text-muted">Format: keyword,description (opsional)</p>
+                                    <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-keyboard"></i> Manual Input</h5>
+                            </div>
+                            <div class="card-body">
+                                <textarea class="form-control" id="keywordTextarea" rows="8" 
+                                    placeholder="Masukkan keywords (satu per baris)&#10;Contoh:&#10;diet sehat&#10;tips menurunkan berat badan&#10;makanan tinggi protein"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="fas fa-cog"></i> Pengaturan</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Bahasa</label>
+                                        <select class="form-select" id="languageSelect">
+                                            <option value="id">Indonesia</option>
+                                            <option value="en">English</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Tipe Konten</label>
+                                        <select class="form-select" id="contentTypeSelect">
+                                            <option value="article">Artikel</option>
+                                            <option value="blog">Blog Post</option>
+                                            <option value="guide">Panduan</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Jumlah Gambar</label>
+                                        <select class="form-select" id="imageCountSelect">
+                                            <option value="1">1 Gambar</option>
+                                            <option value="2">2 Gambar</option>
+                                            <option value="3" selected>3 Gambar</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <div class="text-center mb-4">
+                    <button class="btn btn-custom btn-lg" id="generateBtn" onclick="generateContent()">
+                        <i class="fas fa-magic"></i> Generate Content
+                    </button>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6><i class="fas fa-spinner fa-spin"></i> Processing...</h6>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%" id="progressBar"></div>
+                            </div>
+                            <small class="text-muted" id="progressText">Memulai proses...</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="resultsContainer" style="display: none;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list"></i> Hasil Generate</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="resultsList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="row mt-5">
+                    <div class="col-md-3 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h6>Keyword Research</h6>
+                        <small class="text-muted">Riset keyword otomatis dengan SERP analysis</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h6>E-E-A-T Content</h6>
+                        <small class="text-muted">Generate konten dengan Experience, Expertise, Authority, Trust</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-image"></i>
+                        </div>
+                        <h6>Auto Images</h6>
+                        <small class="text-muted">Generate gambar AI dan stock photos</small>
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <div class="feature-icon">
+                            <i class="fas fa-wordpress"></i>
+                        </div>
+                        <h6>WordPress Ready</h6>
+                        <small class="text-muted">Export ke WordPress atau HTML</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const csvFile = document.getElementById('csvFile');
+        const keywordTextarea = document.getElementById('keywordTextarea');
+
+        uploadArea.addEventListener('click', () => csvFile.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        csvFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        function handleFileUpload(file) {
+            if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+                alert('Please upload a CSV file');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                const keywords = lines
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0)
+                    .map(line => line.split(',')[0]); // Take first column as keyword
+                
+                keywordTextarea.value = keywords.join('\n');
+            };
+            reader.readAsText(file);
+        }
+
+        // Generate content function
+        async function generateContent() {
+            const keywords = keywordTextarea.value.trim().split('\n').filter(k => k.trim());
+            
+            if (keywords.length === 0) {
+                alert('Please enter at least one keyword');
+                return;
+            }
+
+            // Show progress
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('generateBtn').disabled = true;
+
+            try {
+                const response = await fetch('/process-keywords', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        keywords: keywords,
+                        language: document.getElementById('languageSelect').value,
+                        content_type: document.getElementById('contentTypeSelect').value
+                    })
+                });
+
+                const result = await response.json();
+                displayResults(result.results);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error generating content. Please try again.');
+            } finally {
+                document.getElementById('progressContainer').style.display = 'none';
+                document.getElementById('generateBtn').disabled = false;
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsList');
+            container.innerHTML = '';
+
+            results.forEach((result, index) => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'result-card';
+                
+                const statusClass = result.status === 'success' ? 'status-success' : 'status-error';
+                const statusIcon = result.status === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+
+                resultCard.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6><i class="${statusIcon} ${statusClass}"></i> ${result.keyword}</h6>
+                            ${result.title ? `<p class="mb-2"><strong>Title:</strong> ${result.title}</p>` : ''}
+                            ${result.status === 'success' ? 
+                                `<p class="mb-2"><strong>Images:</strong> ${result.images.length} images generated</p>` : 
+                                `<p class="text-danger">${result.status}</p>`
+                            }
+                        </div>
+                        <div>
+                            ${result.status === 'success' ? 
+                                `<button class="btn btn-sm btn-outline-primary" onclick="downloadContent('${result.keyword}')">
+                                    <i class="fas fa-download"></i> Download
+                                </button>` : ''
+                            }
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(resultCard);
+            });
+
+            document.getElementById('resultsContainer').style.display = 'block';
+        }
+
+        function downloadContent(keyword) {
+            // Implementation for downloading content
+            alert(`Downloading content for: ${keyword}`);
+        }
+    </script>
+</body>
+</html>
