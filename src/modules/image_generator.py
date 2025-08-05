@@ -1,6 +1,7 @@
 """
 Image Generator Module
 Generate gambar menggunakan AI dan stock photo APIs
+Windows compatible with free APIs
 """
 
 import asyncio
@@ -12,16 +13,37 @@ import os
 from PIL import Image
 import io
 import base64
+import random
+
+# Free AI APIs
+try:
+    from diffusers import StableDiffusionPipeline
+    import torch
+    STABLE_DIFFUSION_AVAILABLE = True
+except ImportError:
+    STABLE_DIFFUSION_AVAILABLE = False
+
+try:
+    from huggingface_hub import InferenceClient
+    HF_AVAILABLE = True
+except ImportError:
+    HF_AVAILABLE = False
 
 from src.utils.config import Settings
 
 class ImageGenerator:
     def __init__(self):
         self.settings = Settings()
-        self.ua = UserAgent()
         
-        # API endpoints
-        self.apis = {
+        # Initialize free APIs
+        self.hf_client = None
+        self.stable_diffusion = None
+        
+        # Setup free AI clients
+        self._setup_free_ai_clients()
+        
+        # Free stock photo APIs
+        self.free_apis = {
             'unsplash': {
                 'url': 'https://api.unsplash.com/search/photos',
                 'headers': {'Authorization': f'Client-ID {self.settings.unsplash_api_key}'} if self.settings.unsplash_api_key else {}
@@ -35,77 +57,114 @@ class ImageGenerator:
                 'headers': {'Authorization': self.settings.pexels_api_key} if self.settings.pexels_api_key else {}
             }
         }
+        
+        # Free image URLs for fallback
+        self.free_image_urls = [
+            "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800",
+            "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800",
+            "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800",
+            "https://images.unsplash.com/photo-1551434678-e076c223a692?w=800",
+            "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800"
+        ]
+    
+    def _setup_free_ai_clients(self):
+        """Setup free AI clients"""
+        try:
+            if HF_AVAILABLE:
+                self.hf_client = InferenceClient()
+        except Exception as e:
+            print(f"HuggingFace setup failed: {e}")
+        
+        try:
+            if STABLE_DIFFUSION_AVAILABLE and torch.cuda.is_available():
+                # Only load if GPU is available
+                self.stable_diffusion = StableDiffusionPipeline.from_pretrained(
+                    "runwayml/stable-diffusion-v1-5",
+                    torch_dtype=torch.float16
+                )
+                self.stable_diffusion = self.stable_diffusion.to("cuda")
+        except Exception as e:
+            print(f"Stable Diffusion setup failed: {e}")
     
     async def generate_images(self, keyword: str, content: Dict) -> List[str]:
         """Generate images untuk artikel"""
         images = []
         
         try:
-            # 1. Generate AI images (DALL-E)
-            ai_images = await self._generate_ai_images(keyword)
+            # 1. Try free AI image generation
+            ai_images = await self._generate_free_ai_images(keyword)
             images.extend(ai_images)
             
-            # 2. Get stock photos
-            stock_images = await self._get_stock_images(keyword)
+            # 2. Get free stock photos
+            stock_images = await self._get_free_stock_images(keyword)
             images.extend(stock_images)
             
-            # 3. Save images locally
+            # 3. Add fallback images if needed
+            if len(images) < self.settings.max_images_per_article:
+                fallback_images = self._get_fallback_images(keyword)
+                images.extend(fallback_images)
+            
+            # 4. Save images locally
             saved_images = await self._save_images_locally(keyword, images)
             
             return saved_images[:self.settings.max_images_per_article]
             
         except Exception as e:
             print(f"Error generating images for '{keyword}': {str(e)}")
-            return []
+            # Return fallback images
+            return self._get_fallback_images(keyword)
     
-    async def _generate_ai_images(self, keyword: str) -> List[str]:
-        """Generate AI images menggunakan DALL-E"""
+    async def _generate_free_ai_images(self, keyword: str) -> List[str]:
+        """Generate AI images menggunakan free APIs"""
         images = []
         
         try:
-            if not self.settings.openai_api_key:
-                return images
-            
-            # Generate prompts untuk AI
-            prompts = self._create_image_prompts(keyword)
-            
-            for prompt in prompts[:2]:  # Generate 2 AI images
-                try:
-                    response = await openai.Image.acreate(
-                        prompt=prompt,
-                        n=1,
-                        size="1024x1024",
-                        quality="standard"
-                    )
-                    
-                    if response.data:
-                        image_url = response.data[0].url
-                        images.append(image_url)
+            # Try HuggingFace free API
+            if self.hf_client:
+                prompts = self._create_image_prompts(keyword)
+                
+                for prompt in prompts[:1]:  # Generate 1 AI image
+                    try:
+                        response = self.hf_client.post(
+                            "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+                            json={"inputs": prompt}
+                        )
                         
-                except Exception as e:
-                    print(f"Error generating AI image: {str(e)}")
-                    continue
-                    
+                        if response.status_code == 200:
+                            # Save image
+                            image_data = response.content
+                            image_path = f"output/images/{keyword.replace(' ', '_')}_ai.jpg"
+                            
+                            os.makedirs(os.path.dirname(image_path), exist_ok=True)
+                            with open(image_path, 'wb') as f:
+                                f.write(image_data)
+                            
+                            images.append(image_path)
+                            
+                    except Exception as e:
+                        print(f"Error generating AI image: {str(e)}")
+                        continue
+                        
         except Exception as e:
-            print(f"Error in AI image generation: {str(e)}")
+            print(f"Error in free AI image generation: {str(e)}")
         
         return images
     
-    async def _get_stock_images(self, keyword: str) -> List[str]:
-        """Get stock images dari berbagai API"""
+    async def _get_free_stock_images(self, keyword: str) -> List[str]:
+        """Get stock images dari free APIs"""
         images = []
         
-        # Try Unsplash
+        # Try Unsplash (free tier)
         if self.settings.unsplash_api_key:
             unsplash_images = await self._get_unsplash_images(keyword)
             images.extend(unsplash_images)
         
-        # Try Pixabay
+        # Try Pixabay (free tier)
         if self.settings.pixabay_api_key:
             pixabay_images = await self._get_pixabay_images(keyword)
             images.extend(pixabay_images)
         
-        # Try Pexels
+        # Try Pexels (free tier)
         if self.settings.pexels_api_key:
             pexels_images = await self._get_pexels_images(keyword)
             images.extend(pexels_images)
@@ -113,7 +172,7 @@ class ImageGenerator:
         return images
     
     async def _get_unsplash_images(self, keyword: str) -> List[str]:
-        """Get images dari Unsplash API"""
+        """Get images dari Unsplash API (free tier)"""
         images = []
         
         try:
@@ -125,9 +184,9 @@ class ImageGenerator:
                 }
                 
                 async with session.get(
-                    self.apis['unsplash']['url'],
+                    self.free_apis['unsplash']['url'],
                     params=params,
-                    headers=self.apis['unsplash']['headers']
+                    headers=self.free_apis['unsplash']['headers']
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
@@ -141,7 +200,7 @@ class ImageGenerator:
         return images
     
     async def _get_pixabay_images(self, keyword: str) -> List[str]:
-        """Get images dari Pixabay API"""
+        """Get images dari Pixabay API (free tier)"""
         images = []
         
         try:
@@ -152,10 +211,10 @@ class ImageGenerator:
                     'image_type': 'photo',
                     'orientation': 'horizontal'
                 }
-                params.update(self.apis['pixabay']['params'])
+                params.update(self.free_apis['pixabay']['params'])
                 
                 async with session.get(
-                    self.apis['pixabay']['url'],
+                    self.free_apis['pixabay']['url'],
                     params=params
                 ) as response:
                     if response.status == 200:
@@ -170,7 +229,7 @@ class ImageGenerator:
         return images
     
     async def _get_pexels_images(self, keyword: str) -> List[str]:
-        """Get images dari Pexels API"""
+        """Get images dari Pexels API (free tier)"""
         images = []
         
         try:
@@ -182,9 +241,9 @@ class ImageGenerator:
                 }
                 
                 async with session.get(
-                    self.apis['pexels']['url'],
+                    self.free_apis['pexels']['url'],
                     params=params,
-                    headers=self.apis['pexels']['headers']
+                    headers=self.free_apis['pexels']['headers']
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
@@ -196,6 +255,11 @@ class ImageGenerator:
             print(f"Error getting Pexels images: {str(e)}")
         
         return images
+    
+    def _get_fallback_images(self, keyword: str) -> List[str]:
+        """Get fallback images when APIs fail"""
+        # Return random free images
+        return random.sample(self.free_image_urls, min(3, len(self.free_image_urls)))
     
     async def _save_images_locally(self, keyword: str, image_urls: List[str]) -> List[str]:
         """Save images ke local storage"""

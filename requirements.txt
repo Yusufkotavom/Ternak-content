@@ -4,7 +4,7 @@ python-dotenv==1.0.0
 openai==1.3.7
 requests==2.31.0
 beautifulsoup4==4.12.2
-pandas==2.1.3
+pandas>=2.2.0
 python-multipart==0.0.6
 jinja2==3.1.2
 aiofiles==23.2.1
@@ -15,7 +15,21 @@ psycopg2-binary==2.9.9
 python-wordpress-xmlrpc==2.3
 markdown==3.5.1
 pillow==10.1.0
-selenium==4.15.2
-webdriver-manager==4.0.1
 lxml==4.9.3
 fake-useragent==1.4.0
+# Free AI APIs
+huggingface-hub==0.19.4
+transformers==4.35.2
+torch==2.1.1
+diffusers==0.24.0
+# Alternative free APIs
+cohere==4.37
+anthropic==0.7.7
+# Image APIs
+pexels-api==1.0.0
+unsplash-python==1.1.1
+# Web scraping
+selenium==4.15.2
+webdriver-manager==4.0.1
+# Additional utilities
+python-slugify==8.0.1

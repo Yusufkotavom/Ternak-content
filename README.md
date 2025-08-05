@@ -1,292 +1,357 @@
-# Ternak-content
-Berikut adalah README.md profesional untuk proyek software otomatisasi content generation yang kamu rancang. Sudah disiapkan agar bisa langsung dieksekusi atau disuruh ke AI untuk dikembangkan lebih lanjut. Termasuk:
+# Auto Content Generator with E-E-A-T + Bulk Keyword Input
 
-Riset keyword (bulk input)
+Sistem otomatisasi content generation dengan E-E-A-T (Experience, Expertise, Authority, Trust) dan bulk keyword input. Mendukung Windows, Linux, dan Mac dengan free AI APIs.
 
-Konten teks dengan E-E-A-T
+## 🚀 Quick Start
 
-Gambar dari API AI + stok gratis
+### Prerequisites
+- Python 3.8+ (Windows, Linux, Mac)
+- pip (Python package installer)
 
-Output HTML / WordPress
+### Installation
 
-Siap dijadikan MicroSaaS
+#### Windows (Recommended)
+```cmd
+# Run the Windows installer
+install_windows.bat
 
-
-
----
-
-# 🧠 Auto Content Generator with E-E-A-T + Bulk Keyword Input
-
-Sebuah sistem otomatisasi lengkap untuk membuat konten SEO-friendly berbasis E-E-A-T, lengkap dengan riset keyword, pembuatan konten teks dan gambar, dan publikasi ke berbagai platform (WordPress, HTML statis, dll).
-
----
-
-## ✨ Fitur Utama
-
-- ✅ **Bulk Keyword Input** — Masukkan banyak keyword sekaligus (CSV / textarea)
-- ✅ **Automated Keyword Research** — Gunakan SERP scraping, keyword suggestion tools, atau API
-- ✅ **Content Outline Generation** — Buat struktur H1-H3, FAQ, dan listicle
-- ✅ **Content Generation with E-E-A-T** — AI-generated text yang menyimulasikan pengalaman & otoritas
-- ✅ **Gambar Otomatis**
-  - 🎨 AI Image (DALL·E / SD / Invoke)
-  - 📷 Free Stock API: Unsplash, Pixabay, Pexels
-- ✅ **Export Options**
-  - Simpan sebagai HTML, Markdown
-  - Upload via WordPress REST API atau Blogspot API
-- ✅ **Modular System** — Mudah dikembangkan jadi SaaS / CLI tool
-
----
-
-## 🚀 Cara Kerja
-
-```mermaid
-graph TD;
-    A[Input Bulk Keyword] --> B[Riset Keyword Otomatis];
-    B --> C[Generate Outline];
-    C --> D[Generate Konten AI + EEAT];
-    D --> E[Generate Gambar Otomatis];
-    E --> F[Build HTML / Upload ke WordPress];
+# Or manual installation
+pip install -r requirements.txt
 ```
 
----
-
-## ⚙️ Teknologi yang Digunakan
-
-| Komponen | Teknologi |
-|----------|-----------|
-| Backend | Python 3.11+ (FastAPI / Flask) |
-| AI Teks | OpenAI GPT-4 / Local LLM |
-| Gambar AI | DALL·E, Stable Diffusion |
-| Gambar Stock | Unsplash API, Pixabay API, Pexels API |
-| Database | SQLite / Postgres |
-| Frontend Opsional | React / Astro |
-| Publish | WordPress API, Blogspot API, Static HTML |
-| Automation | Cron + Celery |
-
----
-
-## 📥 Instalasi
-
+#### Linux/Mac
 ```bash
-# Clone repository
-git clone https://github.com/namamu/auto-content-eeat.git
-cd auto-content-eeat
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+```
 
-# Copy environment file
+### Configuration
+
+1. Copy environment file:
+```bash
 cp .env.example .env
 ```
 
-Tambahkan file `.env`:
-
+2. Edit `.env` file with your API keys:
 ```env
+# Free AI APIs (Choose one or more)
+COHERE_API_KEY=your_cohere_key_here
+ANTHROPIC_API_KEY=your_anthropic_key_here
+HUGGINGFACE_TOKEN=your_huggingface_token_here
+
+# Image APIs (Free tiers available)
+UNSPLASH_API_KEY=your_unsplash_key_here
+PIXABAY_API_KEY=your_pixabay_key_here
+PEXELS_API_KEY=your_pexels_key_here
+```
+
+### Free API Keys
+
+Get free API keys from:
+- **Cohere**: https://cohere.ai/ (Free tier available)
+- **Anthropic**: https://anthropic.com/ (Free tier available)
+- **HuggingFace**: https://huggingface.co/ (Free)
+- **Unsplash**: https://unsplash.com/developers (Free tier)
+- **Pixabay**: https://pixabay.com/api/docs/ (Free tier)
+- **Pexels**: https://www.pexels.com/api/ (Free tier)
+
+### Testing
+
+```bash
+# Test Windows compatibility
+python test_windows.py
+
+# Test full system
+python test_system.py
+
+# Test app functionality
+python test_app.py
+```
+
+### Running the Application
+
+```bash
+# Start the web interface
+python run.py
+
+# Or start directly
+python main.py
+```
+
+Access the application:
+- **Web Interface**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+
+## 📋 Features
+
+### ✅ Core Features
+- **Bulk Keyword Input** (CSV/textarea)
+- **Automated Keyword Research**
+- **E-E-A-T Content Generation**
+- **AI Image Generation**
+- **WordPress Publishing**
+- **Web Interface**
+- **CLI Tool**
+- **API Endpoints**
+
+### ✅ Platform Support
+- **Windows Compatible** (No Docker required)
+- **Linux/Mac Support**
+- **Cross-platform**
+
+### ✅ Free AI APIs
+- **Cohere** (free tier)
+- **Anthropic** (free tier)
+- **HuggingFace** (free)
+- **OpenAI** (paid, optional)
+
+### ✅ Free Image APIs
+- **Unsplash** (free tier)
+- **Pixabay** (free tier)
+- **Pexels** (free tier)
+
+## 🎯 Usage
+
+### Web Interface
+1. Open http://localhost:8000 in your browser
+2. Enter keywords (one per line or upload CSV file)
+3. Click "Generate Content"
+4. View and download generated content
+
+### Command Line
+```bash
+python cli.py --keyword "your keyword"
+```
+
+### API
+```bash
+curl -X POST "http://localhost:8000/process-keywords" \
+  -H "Content-Type: application/json" \
+  -d '{"keywords": ["your keyword"]}'
+```
+
+## 📁 Project Structure
+
+```
+auto-content-generator/
+├── main.py                 # Main application
+├── run.py                  # Run script
+├── cli.py                  # Command line interface
+├── test_windows.py         # Windows compatibility test
+├── test_system.py          # Full system test
+├── test_app.py             # App functionality test
+├── install_windows.bat     # Windows installer
+├── requirements.txt        # Python dependencies
+├── requirements_minimal.txt # Minimal dependencies
+├── .env.example           # Environment template
+├── .env                   # Your configuration (create this)
+├── output/                # Generated content
+├── templates/             # HTML templates
+├── static/                # Static files
+└── src/                   # Source code
+    ├── modules/           # Core modules
+    │   ├── keyword_research.py
+    │   ├── content_generator.py
+    │   ├── image_generator.py
+    │   └── wordpress_publisher.py
+    └── utils/             # Utilities
+        └── config.py
+```
+
+## 🔧 Modules
+
+### Keyword Research (`src/modules/keyword_research.py`)
+- Google Suggest API integration
+- Related keywords extraction
+- Competition analysis
+- Search volume estimation
+- Windows compatible (no Selenium)
+
+### Content Generator (`src/modules/content_generator.py`)
+- E-E-A-T optimized content
+- Multiple AI API support (OpenAI, Cohere, Anthropic, HuggingFace)
+- SEO-friendly articles
+- HTML output generation
+- Fallback mechanisms
+
+### Image Generator (`src/modules/image_generator.py`)
+- Free AI image generation (HuggingFace)
+- Stock photo APIs (Unsplash, Pixabay, Pexels)
+- Image optimization
+- Local storage
+
+### WordPress Publisher (`src/modules/wordpress_publisher.py`)
+- WordPress REST API integration
+- Media upload
+- Post publishing
+- Category management
+
+## 🌐 API Endpoints
+
+- `GET /` - Web interface
+- `GET /health` - Health check
+- `GET /api/status` - Application status
+- `GET /api/test-ai` - Test AI APIs
+- `POST /upload-keywords` - Upload CSV file
+- `POST /process-keywords` - Process keywords
+- `POST /publish-wordpress` - Publish to WordPress
+
+## 🛠️ Configuration
+
+### Environment Variables
+```env
+# AI APIs
 OPENAI_API_KEY=your_openai_key
+COHERE_API_KEY=your_cohere_key
+ANTHROPIC_API_KEY=your_anthropic_key
+HUGGINGFACE_TOKEN=your_huggingface_token
+
+# Image APIs
 UNSPLASH_API_KEY=your_unsplash_key
 PIXABAY_API_KEY=your_pixabay_key
 PEXELS_API_KEY=your_pexels_key
+
+# WordPress
 WORDPRESS_URL=https://yourdomain.com
 WORDPRESS_USER=your_user
-WORDPRESS_APP_PASSWORD=xxxxx
+WORDPRESS_APP_PASSWORD=your_app_password
+
+# Server
+HOST=0.0.0.0
+PORT=8000
+DEBUG=True
 ```
 
----
+## 🧪 Testing
 
-## 🚀 Cara Penggunaan
-
-### 1. Web Interface
-
+### Windows Compatibility Test
 ```bash
-# Jalankan server
-python main.py
-
-# Buka browser
-http://localhost:8000
+python test_windows.py
 ```
 
-### 2. CLI Tool
-
+### System Test
 ```bash
-# Single keyword
-python cli.py --keyword "diet sehat"
-
-# Multiple keywords
-python cli.py --keywords "diet sehat" "tips menurunkan berat badan"
-
-# CSV file
-python cli.py --csv sample_keywords.csv
-
-# Publish to WordPress
-python cli.py --csv sample_keywords.csv --wordpress
-
-# Test WordPress connection
-python cli.py --test
+python test_system.py
 ```
 
-### 3. API Endpoints
-
+### App Test
 ```bash
-# Upload CSV
-curl -X POST -F "file=@sample_keywords.csv" http://localhost:8000/upload-keywords
-
-# Process keywords
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"keywords": ["diet sehat", "tips menurunkan berat badan"]}' \
-  http://localhost:8000/process-keywords
-
-# Publish to WordPress
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"keyword": "diet sehat", "content": "<html>...</html>"}' \
-  http://localhost:8000/publish-wordpress
+python test_app.py
 ```
+
+## 🚀 Deployment
+
+### Windows
+```cmd
+# Install
+install_windows.bat
+
+# Run
+python run.py
+```
+
+### Linux/Mac
+```bash
+# Install
+pip install -r requirements.txt
+
+# Run
+python run.py
+```
+
+### Docker (Optional)
+```bash
+docker-compose up -d
+```
+
+## 📊 Performance
+
+- **Keyword Processing**: 50 keywords per batch
+- **Content Generation**: 1500 words per article
+- **Image Generation**: 3 images per article
+- **API Rate Limiting**: 60 requests per minute
+
+## 🔒 Security
+
+- Input validation
+- XSS protection
+- Rate limiting
+- API key management
+- Secure file handling
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Import Errors**
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
+
+2. **Port Already in Use**
+   - Change port in `.env` file: `PORT=8001`
+   - Or kill process using port 8000
+
+3. **API Key Errors**
+   - Check your `.env` file
+   - Verify API keys are correct
+   - Ensure at least one AI API is configured
+
+4. **Directory Errors**
+   ```bash
+   mkdir output
+   mkdir output/images
+   mkdir templates
+   mkdir static
+   ```
+
+### Testing Individual Components
+
+Test imports:
+```bash
+python -c "import fastapi, uvicorn, pandas, requests, aiohttp; print('All imports successful')"
+```
+
+Test configuration:
+```bash
+python -c "from src.utils.config import Settings; s = Settings(); print('Configuration loaded')"
+```
+
+## 📚 Documentation
+
+- **WINDOWS_README.md** - Windows-specific guide
+- **QUICKSTART.md** - Quick start guide
+- **DEVELOPMENT.md** - Development guide
+- **SECURITY.md** - Security guide
+- **PERFORMANCE.md** - Performance guide
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+If you encounter issues:
+1. Run `python test_windows.py` to check compatibility
+2. Check the error messages
+3. Verify your API keys
+4. Ensure all directories exist
 
 ---
 
-## 📝 Format Input Keyword
-
-### 1. Melalui file CSV:
-
-```csv
-keyword,description
-diet sehat,Panduan diet sehat untuk pemula
-tips menurunkan berat badan,Cara efektif menurunkan berat badan
-makanan tinggi protein,Daftar makanan sumber protein terbaik
-```
-
-### 2. Atau via input textarea:
-
-```
-diet sehat
-tips menurunkan berat badan
-makanan tinggi protein
-```
-
----
-
-## 🖼️ Contoh Gambar API Integration
-
-### Unsplash:
-```
-Endpoint: https://api.unsplash.com/search/photos?query={keyword}
-Auth: Authorization: Client-ID {API_KEY}
-```
-
-### Pixabay:
-```
-https://pixabay.com/api/?key={API_KEY}&q={keyword}
-```
-
-### Pexels:
-```
-https://api.pexels.com/v1/search?query={keyword}
-```
-
----
-
-## 📤 Export/Publish Output
-
-`output/` folder akan menyimpan:
-
-- `artikel.html`
-- `gambar.jpg`
-- `meta.json`
-
-Untuk WordPress:
-- Post via REST API
-
-Untuk static site:
-- Bisa deploy ke Vercel / Netlify
-
----
-
-## 📚 TO-DO dan Modul yang Akan Dibuat
-
-| Modul | Status |
-|-------|--------|
-| Bulk Keyword Input | ✅ |
-| Keyword Scraper / API | ✅ |
-| Outline Generator | ✅ |
-| Article Writer with E-E-A-T | ✅ |
-| Gambar AI & Stock | ✅ |
-| Export HTML / WordPress API | ✅ |
-| UI Dashboard | ✅ |
-| CLI Tool | ✅ |
-| Scheduler Automation | ⏳ |
-
----
-
-## 🧠 Tips Penggunaan
-
-1. **Gunakan prompt spesifik untuk E-E-A-T** agar AI menyimulasikan keahlian nyata
-2. **Tambahkan "author profile"** untuk meningkatkan trust
-3. **Kombinasikan dengan plugin SEO** seperti RankMath di WordPress untuk hasil maksimal
-
----
-
-## 💡 Contoh Prompt (GPT)
-
-```
-Tuliskan artikel informatif, bernada profesional dan meyakinkan, tentang 'Tips Diet Sehat'. 
-Sertakan studi kasus, data ilmiah, dan kutipan dari sumber terpercaya. 
-Gunakan gaya bahasa seperti seorang ahli gizi.
-```
-
----
-
-## 🏗️ Struktur Proyek
-
-```
-auto-content-eeat/
-├── main.py                 # FastAPI application
-├── cli.py                  # CLI tool
-├── requirements.txt        # Dependencies
-├── .env.example           # Environment template
-├── sample_keywords.csv    # Sample keywords
-├── src/
-│   ├── modules/
-│   │   ├── keyword_research.py
-│   │   ├── content_generator.py
-│   │   ├── image_generator.py
-│   │   └── wordpress_publisher.py
-│   └── utils/
-│       └── config.py
-├── templates/
-│   └── index.html         # Web interface
-├── static/                # Static files
-└── output/               # Generated content
-```
-
----
-
-## 💼 Lisensi
-
-MIT — Gratis digunakan, dimodifikasi, dan dikomersialkan.
-
----
-
-## 🤝 Kontribusi
-
-Ingin bantu? Boleh!
-
-- Tambahkan modul baru
-- Buatkan versi UI
-- Buat plugin ke platform lain (Substack, Medium)
-
----
-
-## 📬 Kontak
-
-- Telegram: @namamu
-- Email: your@email.com
-
----
-
-## ✅ Siap digunakan ke AI
-
-Kamu tinggal beri perintah:
-
-> "Gunakan README ini, dan buat semua modul satu per satu. Mulai dari keyword input dan scraping."
-
-Kalau kamu mau, saya bisa bantu langsung buatkan struktur folder Python + `main.py` untuk modul pertama (`bulk keyword + riset`). Ingin lanjut dari situ?
+**Happy Content Generating! 🚀**
 

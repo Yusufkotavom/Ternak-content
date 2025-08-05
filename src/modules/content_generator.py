@@ -1,6 +1,7 @@
 """
 Content Generator Module
 Generate konten dengan E-E-A-T (Experience, Expertise, Authority, Trust)
+Using free AI APIs
 """
 
 import asyncio
@@ -9,13 +10,43 @@ from typing import Dict, List, Optional
 import json
 import re
 from datetime import datetime
+import requests
+import os
+
+# Free AI APIs
+try:
+    from transformers import pipeline
+    from huggingface_hub import InferenceClient
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+
+try:
+    import cohere
+    COHERE_AVAILABLE = True
+except ImportError:
+    COHERE_AVAILABLE = False
+
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
 
 from src.utils.config import Settings
 
 class ContentGenerator:
     def __init__(self):
         self.settings = Settings()
-        openai.api_key = self.settings.openai_api_key
+        
+        # Initialize AI clients
+        self.openai_client = None
+        self.cohere_client = None
+        self.anthropic_client = None
+        self.hf_client = None
+        
+        # Setup AI clients
+        self._setup_ai_clients()
         
         # E-E-A-T prompts
         self.eeat_prompts = {
@@ -40,6 +71,33 @@ class ContentGenerator:
                 "Dengan jaminan kualitas dan hasil yang terukur"
             ]
         }
+    
+    def _setup_ai_clients(self):
+        """Setup various AI clients for fallback"""
+        try:
+            if self.settings.openai_api_key:
+                openai.api_key = self.settings.openai_api_key
+                self.openai_client = openai
+        except Exception as e:
+            print(f"OpenAI setup failed: {e}")
+        
+        try:
+            if hasattr(self.settings, 'cohere_api_key') and self.settings.cohere_api_key:
+                self.cohere_client = cohere.Client(self.settings.cohere_api_key)
+        except Exception as e:
+            print(f"Cohere setup failed: {e}")
+        
+        try:
+            if hasattr(self.settings, 'anthropic_api_key') and self.settings.anthropic_api_key:
+                self.anthropic_client = anthropic.Anthropic(api_key=self.settings.anthropic_api_key)
+        except Exception as e:
+            print(f"Anthropic setup failed: {e}")
+        
+        try:
+            if TRANSFORMERS_AVAILABLE:
+                self.hf_client = InferenceClient()
+        except Exception as e:
+            print(f"HuggingFace setup failed: {e}")
     
     async def generate_outline(self, keyword: str, research_data: Dict) -> Dict:
         """Generate content outline berdasarkan keyword dan research data"""
@@ -75,23 +133,17 @@ class ContentGenerator:
         """
         
         try:
-            response = await openai.ChatCompletion.acreate(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "Anda adalah content strategist yang ahli dalam membuat outline artikel SEO-friendly."},
-                    {"role": "user", "content": outline_prompt}
-                ],
-                temperature=0.7,
-                max_tokens=1000
-            )
+            # Try different AI providers
+            result = await self._try_ai_generation(outline_prompt, "outline")
             
-            outline_text = response.choices[0].message.content
-            outline = json.loads(outline_text)
-            return outline
-            
+            if result:
+                outline = json.loads(result)
+                return outline
+            else:
+                return self._create_fallback_outline(keyword)
+                
         except Exception as e:
             print(f"Error generating outline: {str(e)}")
-            # Fallback outline
             return self._create_fallback_outline(keyword)
     
     async def generate_content(self, keyword: str, outline: Dict, research_data: Dict) -> Dict:
@@ -133,23 +185,106 @@ class ContentGenerator:
         """
         
         try:
-            response = await openai.ChatCompletion.acreate(
-                model="gpt-4",
-                messages=[
-                    {"role": "system", "content": "Anda adalah content writer profesional dengan pengalaman 10+ tahun. Tulis artikel yang informatif, meyakinkan, dan SEO-friendly."},
-                    {"role": "user", "content": content_prompt}
-                ],
-                temperature=0.8,
-                max_tokens=3000
-            )
+            result = await self._try_ai_generation(content_prompt, "content")
             
-            content_text = response.choices[0].message.content
-            content = json.loads(content_text)
-            return content
-            
+            if result:
+                content = json.loads(result)
+                return content
+            else:
+                return self._create_fallback_content(keyword, outline)
+                
         except Exception as e:
             print(f"Error generating content: {str(e)}")
             return self._create_fallback_content(keyword, outline)
+    
+    async def _try_ai_generation(self, prompt: str, task_type: str) -> Optional[str]:
+        """Try different AI providers in order of preference"""
+        
+        # 1. Try OpenAI first
+        if self.openai_client:
+            try:
+                response = await openai.ChatCompletion.acreate(
+                    model="gpt-3.5-turbo",  # Use cheaper model
+                    messages=[
+                        {"role": "system", "content": "Anda adalah content writer profesional."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                print(f"OpenAI failed: {e}")
+        
+        # 2. Try Cohere
+        if self.cohere_client:
+            try:
+                response = self.cohere_client.generate(
+                    model="command",
+                    prompt=prompt,
+                    max_tokens=2000,
+                    temperature=0.7
+                )
+                return response.generations[0].text
+            except Exception as e:
+                print(f"Cohere failed: {e}")
+        
+        # 3. Try Anthropic
+        if self.anthropic_client:
+            try:
+                response = self.anthropic_client.messages.create(
+                    model="claude-instant-1.2",
+                    max_tokens=2000,
+                    messages=[
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+                return response.content[0].text
+            except Exception as e:
+                print(f"Anthropic failed: {e}")
+        
+        # 4. Try HuggingFace (free)
+        if self.hf_client:
+            try:
+                response = self.hf_client.post(
+                    "https://api-inference.huggingface.co/models/microsoft/DialoGPT-medium",
+                    json={"inputs": prompt}
+                )
+                return response.json()[0]["generated_text"]
+            except Exception as e:
+                print(f"HuggingFace failed: {e}")
+        
+        # 5. Fallback to simple template
+        return self._generate_simple_content(prompt, task_type)
+    
+    def _generate_simple_content(self, prompt: str, task_type: str) -> str:
+        """Generate simple content when AI APIs are not available"""
+        if task_type == "outline":
+            return json.dumps({
+                "title": "Panduan Lengkap",
+                "h1": "Panduan Lengkap",
+                "h2_sections": [
+                    {
+                        "title": "Pengenalan",
+                        "h3_subsections": ["Apa itu", "Manfaat", "Kegunaan"]
+                    },
+                    {
+                        "title": "Cara Melakukan",
+                        "h3_subsections": ["Langkah-langkah", "Tips", "Perhatian"]
+                    }
+                ],
+                "faq": ["Apa itu?", "Bagaimana cara?", "Apa manfaatnya?"],
+                "conclusion": "Kesimpulan"
+            })
+        else:
+            return json.dumps({
+                "title": "Panduan Lengkap",
+                "meta_description": "Panduan lengkap dan informatif",
+                "content": "<h2>Pengenalan</h2><p>Artikel informatif yang lengkap.</p>",
+                "summary": "Ringkasan artikel",
+                "keywords": ["keyword"],
+                "word_count": 500
+            })
     
     def _build_eeat_context(self, keyword: str, research_data: Dict) -> str:
         """Build E-E-A-T context untuk prompt"""
